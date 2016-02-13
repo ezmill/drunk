@@ -3,7 +3,7 @@ var isMobile = false;
 //smh
 var renderSize;
 var container = document.getElementById("container");
-var PATH = './assets/';
+var PATH = '../assets/';
 var mouse = new THREE.Vector2(0.0, 0.0);
 var cameraMouse = new THREE.Vector2(0.0,0.0);
 var time = 0.0;
@@ -67,7 +67,7 @@ function init() {
     videoTexture = new THREE.Texture(video)
     videoTexture.minFilter = videoTexture.magFilter = THREE.NearestFilter;
 
-    createScreensaver();
+    createFeedbackMaterial();
 
     debounceResize = debounce(onWindowResize, 250);
     window.addEventListener("resize", debounceResize);
@@ -96,25 +96,9 @@ function checkLoading(){
         createScreensaver();
     }
 }
-function createScreensaver(){
-
-    screensaver = new Screensaver(scene, camera, renderer, textures);
-
-    screensaver.init();
-
-    // createMultipassMaterial();
-    createFeedbackMaterial();
-
-}
 
 function createFeedbackMaterial(){
 
-    gradient = new Gradient(renderSize.x, renderSize.y);
-    gradient.init();
-    gradient.update();
-
-    gTexture = new THREE.Texture(gradient.canvas);
-    gTexture.minFilter = gTexture.magFilter = THREE.LinearFilter;
 
     imgTexture = loader.load(images[0]);
     imgTexture.minFilter = imgTexture.magFilter = THREE.LinearFilter;
@@ -123,10 +107,10 @@ function createFeedbackMaterial(){
 
     shaders = [
         // new ReposShader(),
-        new ReposShader(),
-        new DifferencingShader(), 
         new PassShader(),
-        new DenoiseShader() 
+        new WarpShader(), 
+        new PassShader(),
+        new PassShader() 
     ]
     uniforms = {
         "mouse": mouse,
@@ -153,53 +137,12 @@ function createFeedbackMaterial(){
         // texturePlanes[i] = new TexturePlane(scene, camera, renderer, textures[i], Math.random())
         // texturePlanes[i].init();
     // }
-    screensaver.refractionPlaneMaterial.uniforms["map"].value = fbMaterial.fbos[2].renderTarget;
-    // screensaver.refractionPlaneMaterial.uniforms["refractionMap"].value = imgTexture;
-    // screensaver.refractionPlaneMaterial.uniforms["tex2"].value = imgTexture2;
-    // screensaver.refractionPlaneMaterial.uniforms["map"].value = textures[0];
             // capturer.start();
 
 
     animate();
 }
 
-function createMultipassMaterial(){
-    shaders = [
-        new AShader(),
-        new BShader(),
-        new OUTPUTShader(),
-    ]
-    uniforms = {
-        "FRAME": 0.0,
-        "mouse": mouse,
-        "resolution": renderSize,
-        "time": 0.0
-    }
-    mMaterial = new MultipassMaterial(renderer, scene, camera2, textures[0], shaders);
-    // mMaterial = new MultipassMaterial(renderer, scene, camera2, videoTexture, shaders);
-    mMaterial.init();
-    mMaterial.setUniforms(uniforms);
-
-    geometry = new THREE.PlaneGeometry(renderSize.x*1.0, renderSize.y*1.0);
-    material = new THREE.MeshBasicMaterial({
-        map: textures[0],
-        // map: mMaterial.buffers[2].renderTarget,
-        side: THREE.DoubleSide
-    })
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-    mesh.position.z = 0;
-    // for(var i = 0; i < textures.length; i++){
-        // texturePlanes[i] = new TexturePlane(scene, camera, renderer, textures[i], Math.random())
-        // texturePlanes[i].init();
-    // }
-    screensaver.refractionPlaneMaterial.uniforms["map"].value = mMaterial.buffers[2].renderTarget;
-    // screensaver.refractionPlaneMaterial.uniforms["map"].value = textures[0];
-            // capturer.start();
-
-
-    animate();
-}
 function animate() {
     id = requestAnimationFrame(animate);
     draw();
@@ -210,24 +153,15 @@ function draw() {
     time += 0.01;    
 
 
-    gTexture.needsUpdate = true;
     videoTexture.needsUpdate = true;
 
-    screensaver.update();
 
 
     fbMaterial.update();
-    screensaver.refractionPlane.visible = false;
-    screensaver.cubeCamera.position.copy( screensaver.refractionPlane.position );
-    screensaver.cubeCamera.updateCubeMap( renderer, scene );
-
-    //Render the scene
-    screensaver.refractionPlane.visible = true;
     renderer.render(scene, camera);
     fbMaterial.getNewFrame();
     fbMaterial.swapBuffers();
 
-    // render();
 
     uniforms["time"] = time;    
     uniforms["mouse"].x = mouse.x;
@@ -238,7 +172,6 @@ function draw() {
     // uniforms["mouse"].y = Math.cos(time*4.0);
     uniforms["r2"] = r2;
 
-    // fbMaterial.update();
     fbMaterial.setUniforms(uniforms);
 
     // camera.position.x = (-camera.position.x + cameraMouse.x)*0.01;
@@ -248,12 +181,6 @@ function draw() {
     capturer.capture( renderer.domElement );
 
 }
-function render(){
-    // fbMaterial.update();
-    // renderer.render(scene, camera);
-    // fbMaterial.getNewFrame();
-    // fbMaterial.swapBuffers();
-}
 
 function onMouseMove(event) {
     mouse.x = (event.pageX / renderSize.x) * 2 - 1;  
@@ -262,9 +189,6 @@ function onMouseMove(event) {
     cameraMouse.y = ( event.clientY - renderSize.y/2 )*4;
 }
 function onMouseDown() {
-    gradient.sampleColors();
-    gradient.update();
-
     // r2 = Math.random()*2.0;
 }
 
