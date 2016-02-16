@@ -891,3 +891,81 @@ var WarpShader = function(){
         
         ].join("\n");
 }
+var WarpShader2 = function(){
+        this.uniforms = THREE.UniformsUtils.merge([
+            {
+                "texture"  : { type: "t", value: null },
+                "mouse"  : { type: "v2", value: null },
+                "resolution"  : { type: "v2", value: null },
+                "time"  : { type: "f", value: null },
+                "r2"  : { type: "f", value: null },
+                "distortion"  : { type: "f", value: null },
+                "distance"  : { type: "f", value: null },
+                "speed"  : { type: "f", value: null }
+
+            }
+        ]);
+
+        this.vertexShader = [
+
+            "varying vec2 vUv;",
+            "void main() {",
+            "    vUv = uv;",
+            "    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+            "}"
+        
+        ].join("\n");
+        
+        this.fragmentShader = [
+            
+
+
+            "uniform sampler2D texture;",
+
+            "uniform sampler2D alpha;",
+            "uniform vec2 resolution;",
+            "uniform vec2 mouse;",
+            "uniform float r2;",
+            "uniform float time;",
+            "uniform float speed;",
+            "uniform float distortion;",
+            "uniform float distance;",
+            "varying vec2 vUv;",
+
+            "void main(){",
+
+            "    // vec2 uv = gl_FragCoord.xy / size.xy;",
+            "    vec2 uv = vUv;",
+
+            "vec3 col = texture2D(texture, vUv).rgb;",
+
+            "vec4 center = texture2D(texture, vUv);",
+            "float exponent = 1.0;",
+            "vec4 color = vec4(0.0);",
+            "float total = 0.0;",
+            "for (float x = -4.0; x <= 4.0; x += 1.0) {",
+            "    for (float y = -4.0; y <= 4.0; y += 1.0) {",
+            "        vec4 sample = texture2D(texture, vUv + vec2(x, y) / resolution);",
+            "        float weight = 1.0 - abs(dot(sample.rgb - center.rgb, vec3(0.25)));",
+            "        weight = pow(weight, exponent);",
+            "        color += sample * weight;",
+            "        total += weight;",
+            "    }",
+            "}",
+            "vec4 col2 = color / total;",
+
+            // "    vec4 video = texture2D(texture, uv);",
+            "    vec4 video = col2;",
+            "    float osc = sin(time*speed)*distortion;",
+            "    vec2 mouse2 = vec2(sin(time*speed), cos(time*speed))*distance;",
+            "    vec2 ray = vec2(uv.x - mouse2.x + mouse2.x * video.x + osc * video.z,uv.y + mouse2.y - mouse2.y * video.y + osc * video.z);",
+
+            "    vec4 newVideo = texture2D(texture, ray);",
+            "    gl_FragColor = vec4(newVideo.xyz,1.0);",
+
+            "}"
+
+
+        
+        ].join("\n");
+}

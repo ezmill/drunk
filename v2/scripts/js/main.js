@@ -28,6 +28,17 @@ var capturer = new CCapture( { framerate: 60, format: 'webm', workersPath: 'js/'
 var screensaver;
 var texturePlanes = [];
 var r2 = 10.5;
+var Params = function() {
+  this.speed = 7.7;
+  this.distortion = 0.0;
+  this.distance = 0.1;
+};
+var shaderParams = new Params();
+var gui = new dat.GUI();
+var speed = gui.add(shaderParams, 'speed', 0.0, 10.0);
+var distortion = gui.add(shaderParams, 'distortion', 0.0, 2.0);
+var distance = gui.add(shaderParams, 'distance', 0.0, 0.2);
+console.log(gui);
 init();    
 
 
@@ -53,7 +64,7 @@ function init() {
     camera2 = new THREE.Camera();
     camera2.position.z = 1;
 
-    controls = new THREE.OrbitControls(camera);
+    // controls = new THREE.OrbitControls(camera);
     // controls.noRotate = true;
     container.appendChild(renderer.domElement);
 
@@ -105,18 +116,28 @@ function createFeedbackMaterial(){
     imgTexture2 = loader.load(images[1]);
     imgTexture2.minFilter = imgTexture2.magFilter = THREE.LinearFilter;
 
+    // shaders = [
+    //     // new ReposShader(),
+    //     new PassShader(),
+    //     new WarpShader(), 
+    //     new PassShader(),
+    //     new PassShader() 
+    // ]
     shaders = [
         // new ReposShader(),
         new PassShader(),
-        new WarpShader(), 
+        new DifferencingShader(), 
         new PassShader(),
-        new PassShader() 
+        new WarpShader2() 
     ]
     uniforms = {
         "mouse": mouse,
         "resolution": renderSize,
         "time": 0.0,
-        "r2": r2
+        "r2": r2,
+        "speed": shaderParams.speed,
+        "distortion": shaderParams.distortion,
+        "distance": shaderParams.distance
     }
     // fbMaterial = new FeedbackMaterial(renderer, scene, camera2, textures[0], shaders);
     // fbMaterial = new FeedbackMaterial(renderer, scene, camera2, gTexture, shaders);
@@ -182,6 +203,16 @@ function draw() {
 
 }
 
+speed.onChange(function(value){
+    uniforms["speed"] = value;
+});
+
+distortion.onChange(function(value){
+    uniforms["distortion"] = value;
+});
+distance.onChange(function(value){
+    uniforms["distance"] = value;
+});
 function onMouseMove(event) {
     mouse.x = (event.pageX / renderSize.x) * 2 - 1;  
     mouse.y = -(event.pageY / renderSize.y) * 2 + 1;
