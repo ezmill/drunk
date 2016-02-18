@@ -15,6 +15,7 @@ var renderTarget;
 var textures = [];
 var loadedItems = 0;
 var loader = new THREE.TextureLoader();
+var dt;
 var images = [
 
     // PATH + "textures/IMG_6702.jpg",
@@ -123,11 +124,17 @@ function createFeedbackMaterial(){
     //     new PassShader(),
     //     new PassShader() 
     // ]
+    curves = [
+        [[0.0,0.0], [0.458,0.527], [0.6,0.74], [1.0,1.0]],
+        [[0.0,0.0], [0.423,0.473], [1.0,1.0]],
+        [[0.0,0.0], [0.305,0.596], [1.0,1.0]]
+    ]
+
     shaders = [
         // new ReposShader(),
         new PassShader(),
         new DifferencingShader(), 
-        new PassShader(),
+        new CurvesShader(curves[0], curves[1], curves[2]),
         new WarpShader2() 
     ]
     uniforms = {
@@ -137,7 +144,8 @@ function createFeedbackMaterial(){
         "r2": r2,
         "speed": shaderParams.speed,
         "distortion": shaderParams.distortion,
-        "distance": shaderParams.distance
+        "distance": shaderParams.distance,
+        "curveMap": dt
     }
     // fbMaterial = new FeedbackMaterial(renderer, scene, camera2, textures[0], shaders);
     // fbMaterial = new FeedbackMaterial(renderer, scene, camera2, gTexture, shaders);
@@ -199,6 +207,10 @@ function draw() {
     // camera.position.y = (camera.position.y - cameraMouse.y)*0.01;
     // camera.lookAt(lookat);
     // renderer.render( scene, camera );
+    dt.needsUpdate = true;
+    uniforms["curveMap"] = dt;
+
+
     capturer.capture( renderer.domElement );
 
 }
